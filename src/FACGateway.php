@@ -92,15 +92,16 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
 
     public function authorize(array $options = []) : \Omnipay\Common\Message\AbstractRequest
     {
+        if (!array_key_exists('transactionCode', $options))
+        {
+            $options['transactionCode'] = new TransactionCode([TransactionCode::NONE]);
+        }
+
         if (array_key_exists(Constants::AUTHORIZE_OPTION_3DS, $options) && $options[Constants::AUTHORIZE_OPTION_3DS] === true)
         {
             return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize3DS", $options);
         }
 
-        if (!array_key_exists('transactionCode', $options))
-        {
-            $options['transactionCode'] = new TransactionCode([TransactionCode::NONE]);
-        }
         return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize", $options);
     }
 
@@ -119,6 +120,11 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
         if (!array_key_exists('transactionCode', $options))
         {
             $options['transactionCode'] = new TransactionCode([TransactionCode::SINGLE_PASS]);
+        }
+
+        if (array_key_exists(Constants::AUTHORIZE_OPTION_3DS, $options) && $options[Constants::AUTHORIZE_OPTION_3DS] === true)
+        {
+            return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize3DS", $options);
         }
 
         return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize", $options);

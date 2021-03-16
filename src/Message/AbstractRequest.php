@@ -11,8 +11,12 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
 {
     const SIGNATURE_METHOD_SHA1 = 'SHA1';
 
+    const PARAM_CACHE_TRANSACTION = 'cacheTransaction';
+    const PARAM_CACHE_REQUEST = 'cacheRequest';
+
     protected $data = [];
     protected $XMLDoc;
+    protected $TransactionCacheDir = 'transactions/';
 
     protected $FACServices = [
         "Authorize" => [
@@ -26,7 +30,15 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
         "TransactionModification" => [
             "request"=>"TransactionModificationRequest",
             "response"=>"TransactionModificationResponse"
-        ]
+        ],
+        "Tokenize" => [
+            "request"=>"TokenizeRequest",
+            "response"=>"TokenizeResponse"
+        ],
+        "Authorize3DS" => [
+            "request"=>"Authorize3DSRequest",
+            "response"=>"Authorize3DSResponse"
+        ],
     ];
 
     public function signTransaction()
@@ -35,6 +47,7 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
 
         switch ($this->getMessageClassName())
         {
+            case "Authorize3DS":
             case "Authorize":
                 $data = $this->getFacPwd().$this->getFacId().$this->getFacAcquirer().$this->getTransactionId().$this->getAmountForFAC().$this->getCurrencyNumeric();
                 $hash = sha1($data, true);
@@ -48,24 +61,26 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
 
     public function sendData($data)
     {
-        if ($this->getTestMode()) print "Sending to: ".$this->getEndpoint().$this->getMessageClassName()."...\n";
-
         $this->createNewXMLDoc($data);
-
-        if($this->getTestMode()) $this->XMLDoc->asXML($this->getMessageClassName().'Request.xml');
 
         $httpResponse = $this->httpClient
             ->request("POST", $this->getEndpoint().$this->getMessageClassName(), [
             "Content-Type"=>"text/html"
         ], $this->XMLDoc->asXML());
 
-        if ($this->getTestMode())
+        if($this->getCacheRequest())
         {
-            print "Response Headers: \n";
-            foreach ($httpResponse->getHeaders() as $header=>$headerValues)
+            if (!is_dir($this->TransactionCacheDir))
             {
-                print "$header: ".implode(", ", $headerValues)."\n";
+                $cacheDirExists = mkdir($this->TransactionCacheDir);
             }
+            else
+            {
+                $cacheDirExists = true;
+            }
+
+            if ($cacheDirExists)
+                $this->XMLDoc->asXML($this->TransactionCacheDir.$this->getMessageClassName().'Request_'.$this->getTransactionId().'.xml');
         }
 
         switch ($httpResponse->getStatusCode())
@@ -77,7 +92,20 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
                 $responseXML = new \SimpleXMLElement($responseContent);
                 $responseXML->registerXPathNamespace("fac", Constants::PLATFORM_XML_NS);
 
-                if($this->getTestMode()) $responseXML->asXML($this->getMessageClassName().'Response.xml');
+                if($this->getCacheTransaction())
+                {
+                    if (!is_dir($this->TransactionCacheDir))
+                    {
+                        $cacheDirExists = mkdir($this->TransactionCacheDir);
+                    }
+                    else
+                    {
+                        $cacheDirExists = true;
+                    }
+
+                    if ($cacheDirExists)
+                        $responseXML->asXML($this->TransactionCacheDir.$this->getMessageClassName().'Response_'.$this->getTransactionId().'.xml');
+                }
 
                 return $this->response = new $responseClassName($this, $responseXML);
 
@@ -235,5 +263,25 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
     public function getTransactionCode() : TransactionCode
     {
         return $this->getParameter(Authorize::PARAM_TRANSACTIONCODE);
+    }
+
+    public function setCacheTransaction(bool $value)
+    {
+        return $this->setParameter(AbstractRequest::PARAM_CACHE_TRANSACTION, $value);
+    }
+
+    public function getCacheTransaction()
+    {
+        return $this->getParameter(AbstractRequest::PARAM_CACHE_TRANSACTION);
+    }
+
+    public function setCacheRequest(bool $value)
+    {
+        return $this->setParameter(AbstractRequest::PARAM_CACHE_REQUEST, $value);
+    }
+
+    public function getCacheRequest()
+    {
+        return $this->getParameter(AbstractRequest::PARAM_CACHE_REQUEST);
     }
 }

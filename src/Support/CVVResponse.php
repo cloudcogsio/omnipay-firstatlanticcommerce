@@ -36,8 +36,27 @@ class CVVResponse
         throw new UnsupportedCVVResponseCode($responseCode);
     }
 
+    public function __toString()
+    {
+        if($this->responseCode)
+            return $this->responseCode->Code;
+
+        return "";
+    }
+
+    public function getResponseText()
+    {
+        if ($this->responseCode)
+        {
+            return $this->responseCode->Definition;
+        }
+    }
+
     public function getResponseCode()
     {
-        return $this->responseCode;
+        if ($this->responseCode)
+        {
+            return $this->responseCode->Code;
+        }
     }
 }

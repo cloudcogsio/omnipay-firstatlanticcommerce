@@ -7,8 +7,12 @@ use Omnipay\FirstAtlanticCommerce\Exception\InvalidEmailAddress;
 
 class CreditCard extends OmniPayCreditCard
 {
+    protected $bin;
+
     public function validate()
     {
+        $this->bin = $this->getBin(6);
+
         parent::validate();
 
         return $this
@@ -76,11 +80,24 @@ class CreditCard extends OmniPayCreditCard
         if (strlen($value) == 2 && ctype_alpha($value)) $country = (new \League\ISO3166\ISO3166)->alpha2(strtoupper($value));
         if (strlen($value) == 3 && ctype_alpha($value)) $country = (new \League\ISO3166\ISO3166)->alpha3(strtoupper($value));
         if (strlen($value) == 3 && ctype_digit($value)) $country = (new \League\ISO3166\ISO3166)->numeric(intval($value));
-        $country = (new \League\ISO3166\ISO3166)->name($value);
 
         if (is_array($country) && array_key_exists('numeric', $country))
-            return $this->setParameter('billingCountry', $country);
+            return $this->setParameter('billingCountry', $country['numeric']);
 
         return $this->setParameter('billingCountry', null);
+    }
+
+    public function getBin($length = 6)
+    {
+        if (intval($length) > 6 || intval($length) < 4) $length = 6;
+
+        if ($this->bin) return substr($this->bin,0,$length);
+
+        if($this->getNumber())
+        {
+            return substr($this->getNumber(), 0, $length);
+        }
+
+        return null;
     }
 }

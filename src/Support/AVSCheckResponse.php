@@ -7,7 +7,7 @@ use Omnipay\FirstAtlanticCommerce\Exception\UnsupportedAVSCheckResponseCode;
 class AVSCheckResponse
 {
     const BRAND_VISA = "visa";
-    const BRAND_MASTERCARD = "masterCard";
+    const BRAND_MASTERCARD = "mastercard";
     const BRAND_AMEX = "amex";
 
     protected $responseCode;
@@ -15,7 +15,7 @@ class AVSCheckResponse
     protected $responseCodes = [
         self::BRAND_VISA => [
             "A" => "Address matches, Zip code does not match.",
-            "B" => " Street addresses match for international transaction. Postal code not verified due to incompatible formats.",
+            "B" => "Street addresses match for international transaction. Postal code not verified due to incompatible formats.",
             "C" => "Street address and postal code not verified for international transaction due to incompatible formats.",
             "D" => "Street addresses and postal codes match for international transaction.",
             "E" => "Error response for Merchant Category Code.",
