@@ -30,13 +30,49 @@ implements Framework\SV_WC_Payment_Gateway_API_response, Framework\SV_WC_Payment
 	}
 
 	public function get_csc_result() {
-
-	    return ( ! empty( $this->CreditCardTransactionResults->getCVV2Result()->getResponseCode() ) ) ? $this->CreditCardTransactionResults->getCVV2Result()->getResponseCode(): null;
-	}
+        try {
+	       return ( ! empty( $this->CreditCardTransactionResults->getCVV2Result()->getResponseCode() ) ) ? $this->CreditCardTransactionResults->getCVV2Result()->getResponseCode(): null;
+        } catch (Exception $e)
+        {
+            return null;
+        }
+    }
 
 	public function csc_match() {
 
+	    // No results from gateway for CVV
+	    if($this->get_csc_result() == null || !$this->get_csc_result()) return true;
+
 		return $this->get_csc_result() === "M";
+	}
+
+	public function gatewayApproved()
+	{
+	    return parent::transaction_approved();
+	}
+
+	public function transaction_approved()
+	{
+	    if ($this->gatewayApproved())
+	    {
+	        if($this->check_csc)
+	        {
+    	        if ($this->csc_match())
+    	        {
+    	            return true;
+    	        }
+    	        else
+    	        {
+    	            return false;
+    	        }
+	        }
+	        else
+	        {
+	            return true;
+	        }
+	    }
+
+	    return false;
 	}
 
 

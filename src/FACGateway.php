@@ -90,11 +90,46 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
         return $this->getParameter(Constants::CONFIG_KEY_FACCUR);
     }
 
+    public function setIntegrationOption($option)
+    {
+        return $this->setParameter(Constants::GATEWAY_CONFIG_KEY_INTEGRATION,$option);
+    }
+
+    public function getIntegrationOption()
+    {
+        return $this->getParameter(Constants::GATEWAY_CONFIG_KEY_INTEGRATION);
+    }
+
+    public function setFacPageSet($PageSet)
+    {
+        return $this->setParameter(Constants::CONFIG_KEY_FACPGSET, $PageSet);
+    }
+
+    public function getFacPageSet()
+    {
+        return $this->getParameter(Constants::CONFIG_KEY_FACPGSET);
+    }
+
+    public function setFacPageName($PageName)
+    {
+        return $this->setParameter(Constants::CONFIG_KEY_FACPGNAM, $PageName);
+    }
+
+    public function getFacPageName()
+    {
+        return $this->getParameter(Constants::CONFIG_KEY_FACPGNAM);
+    }
+
     public function authorize(array $options = []) : \Omnipay\Common\Message\AbstractRequest
     {
         if (!array_key_exists('transactionCode', $options))
         {
             $options['transactionCode'] = new TransactionCode([TransactionCode::NONE]);
+        }
+
+        if (array_key_exists(Constants::AUTHORIZE_OPTION_HOSTED_PAGE, $options) && $options[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] === true)
+        {
+            return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\HostedPagePreprocess", $options);
         }
 
         if (array_key_exists(Constants::AUTHORIZE_OPTION_3DS, $options) && $options[Constants::AUTHORIZE_OPTION_3DS] === true)
@@ -122,12 +157,22 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
             $options['transactionCode'] = new TransactionCode([TransactionCode::SINGLE_PASS]);
         }
 
+        if (array_key_exists(Constants::AUTHORIZE_OPTION_HOSTED_PAGE, $options) && $options[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] === true)
+        {
+            return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\HostedPagePreprocess", $options);
+        }
+
         if (array_key_exists(Constants::AUTHORIZE_OPTION_3DS, $options) && $options[Constants::AUTHORIZE_OPTION_3DS] === true)
         {
             return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize3DS", $options);
         }
 
         return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\Authorize", $options);
+    }
+
+    public function hostedPageResults(array $options = [])
+    {
+        return $this->createRequest("\Omnipay\FirstAtlanticCommerce\Message\HostedPageResults", $options);
     }
 
     public function refund(array $options = [])

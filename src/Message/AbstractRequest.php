@@ -39,6 +39,14 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
             "request"=>"Authorize3DSRequest",
             "response"=>"Authorize3DSResponse"
         ],
+        "HostedPagePreprocess" => [
+            "request"=>"HostedPagePreprocessRequest",
+            "response"=>"HostedPagePreprocessResponse"
+        ],
+        "HostedPageResults" => [
+            "request"=>"string",
+            "response"=>"HostedPageResultsResponse"
+        ]
     ];
 
     public function signTransaction()
@@ -47,6 +55,7 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
 
         switch ($this->getMessageClassName())
         {
+            case "HostedPagePreprocess":
             case "Authorize3DS":
             case "Authorize":
                 $data = $this->getFacPwd().$this->getFacId().$this->getFacAcquirer().$this->getTransactionId().$this->getAmountForFAC().$this->getCurrencyNumeric();
@@ -120,24 +129,39 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
     protected function createNewXMLDoc($data)
     {
         $rootElement = $this->FACServices[$this->getMessageClassName()]["request"];
-        $this->XMLDoc = new \SimpleXMLElement("<".$rootElement." xmlns=\"".Constants::PLATFORM_XML_NS."\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />");
 
-        $this->createXMLFromData($this->XMLDoc, $data);
+        if(is_string($data))
+        {
+            $this->XMLDoc = new \SimpleXMLElement("<".$rootElement." xmlns=\"".Constants::PLATFORM_XML_NS."\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">".$data."</".$rootElement.">");
+        }
+        else
+        {
+            $this->XMLDoc = new \SimpleXMLElement("<".$rootElement." xmlns=\"".Constants::PLATFORM_XML_NS."\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" />");
+
+            $this->createXMLFromData($this->XMLDoc, $data);
+        }
     }
 
     protected function createXMLFromData(\SimpleXMLElement $parent, $data)
     {
-        foreach ($data as $elementName=>$value)
+        if (is_array($data))
         {
-            if (is_array($value))
+            foreach ($data as $elementName=>$value)
             {
-                $element = $parent->addChild($elementName);
-                $this->createXMLFromData($element, $value);
+                if (is_array($value))
+                {
+                    $element = $parent->addChild($elementName);
+                    $this->createXMLFromData($element, $value);
+                }
+                else
+                {
+                    $parent->addChild($elementName, $value);
+                }
             }
-            else
-            {
-                $parent->addChild($elementName, $value);
-            }
+        }
+        elseif (is_string($data))
+        {
+            $parent->addChild($data);
         }
     }
 

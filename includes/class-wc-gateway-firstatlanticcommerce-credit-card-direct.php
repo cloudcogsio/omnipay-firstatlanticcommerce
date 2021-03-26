@@ -5,6 +5,10 @@
 
 use SkyVerge\WooCommerce\PluginFramework\v5_10_3 as Framework;
 use OmniPay\FirstAtlanticCommerce\Support\ThreeDSResponse;
+use Omnipay\FirstAtlanticCommerce\FACGateway;
+use Omnipay\FirstAtlanticCommerce\Constants;
+use Omnipay\FirstAtlanticCommerce\Support\CreditCard;
+use SkyVerge\WooCommerce\PluginFramework\v5_10_3\SV_WC_Helper;
 
 defined( 'ABSPATH' ) or exit;
 
@@ -49,18 +53,18 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 				'method_title'       => __( 'First Atlantic Commerce', self::TEXT_DOMAIN ),
 				'method_description' => __( 'Allow customers to securely pay using their credit card via First Atlantic Commerce.', self::TEXT_DOMAIN ),
 				'supports'           => array(
-					self::FEATURE_PRODUCTS,
-					self::FEATURE_CARD_TYPES,
+					//self::FEATURE_PRODUCTS,
+					//self::FEATURE_CARD_TYPES,
 					self::FEATURE_PAYMENT_FORM,
 					//self::FEATURE_TOKENIZATION,
 					self::FEATURE_CREDIT_CARD_CHARGE,
 					self::FEATURE_CREDIT_CARD_CHARGE_VIRTUAL,
 					self::FEATURE_CREDIT_CARD_AUTHORIZATION,
 					self::FEATURE_CREDIT_CARD_CAPTURE,
-					self::FEATURE_DETAILED_CUSTOMER_DECLINE_MESSAGES,
+					//self::FEATURE_DETAILED_CUSTOMER_DECLINE_MESSAGES,
 					self::FEATURE_REFUNDS,
 					self::FEATURE_VOIDS,
-					self::FEATURE_CUSTOMER_ID,
+					//self::FEATURE_CUSTOMER_ID,
 				),
 				'payment_type'       => self::PAYMENT_TYPE_CREDIT_CARD,
 				'environments'       => $this->get_environments(),
@@ -73,33 +77,91 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 
 		// callback for 3DS
 		add_action( 'woocommerce_api_'.WC_FirstAtlanticCommerce::CREDIT_CARD_GATEWAY_ID, array( $this, 'threeds_authorize_callback'));
+
 	}
 
 	public function threeds_authorize_callback()
 	{
-	    try {
-    	    require_once $this->get_plugin()->get_plugin_path() . '/src/Support/ThreeDSResponse.php';
-
-    	    $ThreeDSResponse = new ThreeDSResponse($this->get_merchant_password(), $_POST);
-
-    	    $response = $this->get_api()->handle_3ds_response($ThreeDSResponse);
-    	    $this->handled_response = $response;
-
-    	    $FACOrderConfirm = explode("|", $ThreeDSResponse->getOrderID());
-    	    $WC_OrderID = $FACOrderConfirm[1];
-    	    $WC_OrderKey = $FACOrderConfirm[0];
-
-            $order = $this->get_order($WC_OrderID);
-
-    	    $this->do_transaction($order);
-
-    	    wp_safe_redirect( get_site_url()."/checkout/order-received/".$WC_OrderID."/?key=".$WC_OrderKey);
-	    } catch (Exception $e)
+	    if (isset($_GET['ID']) && isset($_GET['RespCode']) && isset($_GET['ReasonCode']))
 	    {
-	        wp_safe_redirect( get_site_url()."/checkout");
+	        try {
+                $GW = new FACGateway();
+                if($this->get_environment() == self::ENVIRONMENT_SANDBOX)
+                {
+                    $GW->setTestMode(true);
+                }
+                else {
+                    $GW->setTestMode(false);
+                }
+
+                $HostedPageResultsResponse = $GW->hostedPageResults([
+                    'securityToken'=>$_GET['ID'],
+                    Constants::CONFIG_KEY_FACID => $this->get_merchant_id(),
+                    Constants::CONFIG_KEY_FACPWD => $this->get_merchant_password(),
+                ])->send();
+
+                if($HostedPageResultsResponse->isSuccessful())
+                {
+                    $response = $this->get_api()->handle_hostedpage_response($HostedPageResultsResponse);
+                    $this->handled_response = $response;
+
+                    $FACOrderConfirm = explode("|", $HostedPageResultsResponse->getOrderNumber());
+
+                    $WC_OrderID = $FACOrderConfirm[1];
+                    $WC_OrderKey = $FACOrderConfirm[0];
+
+                    $order = $this->get_order($WC_OrderID);
+
+                    $this->do_transaction($order);
+
+                    print("<script>window.opener.document.location.href = '".get_site_url()."/checkout/order-received/".$WC_OrderID."/?key=".$WC_OrderKey."';</script>");
+                    print("<script>window.close();</script>");
+                    exit;
+                }
+                else
+                {
+                        print "<h3>ERROR: ".$HostedPageResultsResponse->getCode()."</h3>";
+                        print "<h4>".$HostedPageResultsResponse->getMessage()."</h4>";
+                        print "<h5>Please contact us for assistance.</h5>";
+                        print("<script>window.opener.document.location.href = '".get_site_url()."/checkout"."';</script>");
+                        exit;
+                }
+	        } catch (Exception $e)
+	        {
+	            wp_safe_redirect( get_site_url()."/checkout");
+	            exit;
+	        }
+	    }
+	    else
+	    {
+    	    try {
+        	    require_once $this->get_plugin()->get_plugin_path() . '/src/Support/ThreeDSResponse.php';
+
+        	    $ThreeDSResponse = new ThreeDSResponse($this->get_merchant_password(), $_POST);
+
+        	    $response = $this->get_api()->handle_3ds_response($ThreeDSResponse);
+        	    $this->handled_response = $response;
+
+        	    $FACOrderConfirm = explode("|", $ThreeDSResponse->getOrderID());
+
+        	    $WC_OrderID = $FACOrderConfirm[1];
+        	    $WC_OrderKey = $FACOrderConfirm[0];
+
+        	    $order = $this->get_order($WC_OrderID);
+
+        	    $this->do_transaction($order);
+
+        	    wp_safe_redirect( get_site_url()."/checkout/order-received/".$WC_OrderID."/?key=".$WC_OrderKey);
+        	    exit;
+    	    } catch (Exception $e)
+    	    {
+    	        wp_safe_redirect( get_site_url()."/checkout");
+    	        exit;
+    	    }
+
 	    }
 
-	    exit;
+
 	}
 
 
@@ -114,19 +176,10 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 
 		// advanced/kount fraud tool
 		if ( $this->is_advanced_fraud_tool_enabled() ) {
-
-			// enqueue braintree-data.js library
-			//wp_enqueue_script( 'braintree-data', 'https://js.braintreegateway.com/v1/braintree-data.js', array( 'braintree-js-client' ), WC_Braintree::VERSION, true );
-
-			// adjust the script tag to add async attribute
-			//add_filter( 'clean_url', array( $this, 'adjust_fraud_script_tag' ) );
-
-			// this script must be rendered to the page before the braintree-data.js library, hence priority 1
-			//add_action( 'wp_print_footer_scripts', [ $this, 'render_fraud_js' ], 1 );
+			//TODO enqueue kount js libraries
 		}
 
 		if ( $this->is_available() && $this->is_payment_form_page() ) {
-
 			parent::enqueue_gateway_assets();
 
 		}
@@ -144,7 +197,6 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 
 
 	/**
-	 * Add credit card method specific form fields
 	 *
 	 * + Fraud tool settings
 	 *
@@ -153,8 +205,9 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 	protected function get_method_form_fields() {
 
 		$fraud_tool_options = array(
-			'basic'    => __( 'Basic', self::TEXT_DOMAIN ),
-			'advanced' => __( 'Advanced', self::TEXT_DOMAIN ),
+		    'disabled' => __( 'Disabled', self::TEXT_DOMAIN),
+			//'basic'    => __( 'Basic', self::TEXT_DOMAIN ),
+			//'advanced' => __( 'Advanced', self::TEXT_DOMAIN ),
 		);
 
 		if ( $this->is_kount_supported() ) {
@@ -172,8 +225,8 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 				'title'    => __( 'Fraud Tool', self::TEXT_DOMAIN ),
 				'type'     => 'select',
 				'class'    => 'js-fraud-tool',
-				'desc_tip' => __( 'Select the fraud tool you want to use. Basic is enabled by default and requires no additional configuration. Advanced requires additional configuration.', self::TEXT_DOMAIN ),
 				'options'  => $fraud_tool_options,
+			    'custom_attributes' => array('disabled' => 'disabled')
 			),
 			'kount_merchant_id'    => array(
 				'title'    => __( 'Kount merchant ID', self::TEXT_DOMAIN ),
@@ -207,16 +260,17 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 			'threed_secure_title' => array(
 				'title'       => __( '3D Secure', self::TEXT_DOMAIN ),
 				'type'        => 'title',
-				'description' => sprintf( __( '3D Secure benefits cardholders and merchants by providing an additional layer of verification using Verified by Visa and MasterCard SecureCode. %1$sLearn more about 3D Secure%2$s.', self::TEXT_DOMAIN ), '<a href="' . esc_url( $this->get_plugin()->get_documentation_url() ) . '#3d-secure' . '">', '</a>' ),
+				'description' => __( '3D Secure benefits cardholders and merchants by providing an additional layer of verification using Verified by Visa and MasterCard SecureCode and is enabled by default. ', self::TEXT_DOMAIN ),
 			),
-			'threed_secure_card_types' => array(
+			/*'threed_secure_card_types' => array(
 				'title'       => __( 'Supported Card Types', self::TEXT_DOMAIN ),
 				'type'        => 'multiselect',
 				'class'       => 'wc-enhanced-select',
-				'description' => __( '3D Secure validation will only occur for these cards.', self::TEXT_DOMAIN ),
+				'description' => __( '3D Secure validation will occur for these cards.', self::TEXT_DOMAIN ),
 				'default'     => array_keys( $default_card_types ),
 				'options'     => $card_types,
-			),
+			    'custom_attributes' => array('disabled' => 'disabled')
+			),*/
 		);
 
 		return $fields;
@@ -332,6 +386,56 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 		        $order->payment->exp_month      = $response->get_exp_month();
 		        $order->payment->exp_year       = $response->get_exp_year();
 		    }
+		    else
+		    {
+		        if ($response->gatewayApproved())
+		        {
+		            try {
+		                $order->add_order_note( "VOID due to CSC Mismatch [".$response->get_csc_result()."]" );
+
+    		            // Reverse at FAC
+    		            $GW = new FACGateway();
+    		            if($this->get_environment() == self::ENVIRONMENT_SANDBOX)
+    		            {
+    		                $GW->setTestMode(true);
+    		            }
+    		            else {
+    		                $GW->setTestMode(false);
+    		            }
+
+    		            $FACOrder = $order->get_order_key()."|".$order->get_order_number();
+    		            $TrxnData = [
+    		                Constants::CONFIG_KEY_FACID => $this->get_merchant_id(),
+    		                Constants::CONFIG_KEY_FACPWD => $this->get_merchant_password(),
+    		                'transactionId' => $FACOrder,
+    		                'amount' => $order->get_total()
+    		            ];
+
+    		            if (SV_WC_Helper::is_order_virtual( $order ))
+    		            {
+    		                $VoidRequest = $GW->refund($TrxnData);
+    		            }
+    		            else
+    		            {
+    		                $VoidRequest = $GW->void($TrxnData);
+    		            }
+
+    		            $VoidResponse = $VoidRequest->send();
+
+    		            if ($VoidResponse->isSuccessful())
+    		            {
+    		                $order->add_order_note( "Successfully VOIDed at FAC: ([".$VoidResponse->getCode()."]".$VoidResponse->getMessage().")" );
+    		            }
+    		            else
+    		            {
+    		                $order->add_order_note( "Failed to VOID at FAC: ([".$VoidResponse->getCode()."]".$VoidResponse->getMessage().")" );
+    		            }
+		            } catch (Exception $e)
+		            {
+		                $order->add_order_note( "Exception while trying to VOID order at FAC: (".$e->getMessage().")" );
+		            }
+		        }
+		    }
 		}
 
 		return parent::do_credit_card_transaction( $order, $response );
@@ -369,90 +473,7 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 
 
 	/**
-	 * Renders the fraud tool script.
-	 *
-	 * Note this is hooked to load at high priority (1) so that it's rendered prior to the braintree.js/braintree-data.js scripts being loaded
-	 * @link https://developers.braintreepayments.com/guides/advanced-fraud-tools/overview
-	 *
-	 * @internal
-	 *
-	 * @since 3.0.0
-	 */
-	public function render_fraud_js() {
-
-		$environment = 'BraintreeData.environments.' . ( $this->is_test_environment() ? 'sandbox' : 'production' );
-
-		if ( $this->is_kount_direct_enabled() && $this->get_kount_merchant_id() ) {
-			$environment .= '.withId( kount_id )'; // kount_id will be defined before this is output
-		}
-
-		// TODO: consider moving this to it's own file
-
-		?>
-		<script>
-			( function( $ ) {
-
-				var form_id;
-				var kount_id = '<?php echo esc_js( $this->get_kount_merchant_id() ); ?>';
-
-				if ( $( 'form.checkout' ).length ) {
-
-					// checkout page
-					// WC does not set a form ID, use an existing one if available
-					form_id = $( 'form.checkout' ).attr( 'id' ) || 'checkout';
-
-					// otherwise set it ourselves
-					if ( 'checkout' === form_id ) {
-						$( 'form.checkout' ).attr( 'id', form_id );
-					}
-
-				} else if ( $( 'form#order_review' ).length ) {
-
-					// checkout > pay page
-					form_id = 'order_review'
-
-				} else if ( $( 'form#add_payment_method' ).length ) {
-
-					// add payment method page
-					form_id = 'add_payment_method'
-				}
-
-				if ( ! form_id ) {
-					return;
-				}
-
-				window.onBraintreeDataLoad = function () {
-					BraintreeData.setup( '<?php echo esc_js( $this->get_merchant_id() ); ?>', form_id, <?php echo esc_js( $environment ); ?> );
-				}
-
-			} ) ( jQuery );
-		</script>
-		<?php
-	}
-
-
-	/**
-	 * Add an async attribute to the braintree-data.js script tag, there's no
-	 * way to do this when enqueing so it must be done manually here
-	 *
-	 * @since 3.0.0
-	 * @param string $url cleaned URL from esc_url()
-	 * @return string
-	 */
-	public function adjust_fraud_script_tag( $url ) {
-
-		if ( Framework\SV_WC_Helper::str_exists( $url, 'braintree-data.js' ) ) {
-
-			$url = "{$url}' async='true";
-		}
-
-		return $url;
-	}
-
-
-	/**
-	 * Return the enabled fraud tool setting, either 'basic', 'advanced', or
-	 * 'kount_direct'
+	 * Return the enabled fraud tool setting
 	 *
 	 * @return string
 	 */
@@ -554,7 +575,14 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 	 */
 	public function validate_fields() {
 
-		$is_valid = parent::validate_fields();
+	    if($this->integration == "direct")
+	    {
+		  $is_valid = parent::validate_fields();
+	    }
+	    else
+	    {
+	       $is_valid = true;
+	    }
 
         //TODO Additional field validations
 

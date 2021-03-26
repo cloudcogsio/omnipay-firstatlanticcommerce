@@ -21,15 +21,31 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 	 */
 	public function create_credit_card_charge() {
 	    $FACData = [
-	        'card'=>$this->getFACCreditCard(),
 	        'amount' => $this->get_order()->payment_total,
 	        'currency' => $this->get_order_prop('currency'),
 	        'transactionId' => $this->getFACOrderNumber(),
 	    ];
 
-	    // All transactions should be 3DS Auth
-	    $FACData['merchantResponseURL'] = $this->MerchantResponseURL;
-	    $FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
+	    switch ($this->FACAPI->getIntegrationOption())
+	    {
+	        case Constants::GATEWAY_INTEGRATION_DIRECT:
+	            $FACData['card'] = $this->getFACCreditCard();
+	            $FACData['merchantResponseURL'] = $this->MerchantResponseURL;
+	            $FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
+
+	            break;
+
+	        case Constants::GATEWAY_INTEGRATION_HOSTED:
+	            $TransactionCode = new TransactionCode([TransactionCode::HOSTED_PAGE_AUTH_3DS]);
+
+                $FACData['cardHolderResponseURL'] = $this->CardHolderResponseURL;
+                $FACData[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] = true;
+                $FACData['transactionCode'] = $TransactionCode;
+                $FACData['hostedPagePageSet'] = $this->FACAPI->getFacPageSet();
+                $FACData['hostedPageName'] = $this->FACAPI->getFacPageName();
+	            break;
+	    }
+
 
 	    $this->FACRequest = $this->FACAPI->purchase($FACData);
 	}
@@ -40,15 +56,30 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 	public function create_credit_card_auth() {
 
 		$FACData = [
-		    'card'=>$this->getFACCreditCard(),
 		    'amount' => $this->get_order()->payment_total,
 		    'currency' => $this->get_order_prop('currency'),
 		    'transactionId' => $this->getFACOrderNumber(),
 		];
 
-		// All transactions should be 3DS Auth
-		$FACData['merchantResponseURL'] = $this->MerchantResponseURL;
-		$FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
+		switch ($this->FACAPI->getIntegrationOption())
+		{
+		    case Constants::GATEWAY_INTEGRATION_DIRECT:
+		        $FACData['card'] = $this->getFACCreditCard();
+		        $FACData['merchantResponseURL'] = $this->MerchantResponseURL;
+		        $FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
+
+		        break;
+
+		    case Constants::GATEWAY_INTEGRATION_HOSTED:
+		        $TransactionCode = new TransactionCode([TransactionCode::HOSTED_PAGE_AUTH_3DS]);
+
+		        $FACData['cardHolderResponseURL'] = $this->CardHolderResponseURL;
+		        $FACData[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] = true;
+		        $FACData['transactionCode'] = $TransactionCode;
+		        $FACData['hostedPagePageSet'] = $this->FACAPI->getFacPageSet();
+		        $FACData['hostedPageName'] = $this->FACAPI->getFacPageName();
+		        break;
+		}
 
 		$this->FACRequest = $this->FACAPI->authorize($FACData);
 	}

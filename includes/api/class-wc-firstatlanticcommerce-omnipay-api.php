@@ -1,6 +1,7 @@
 <?php
 use SkyVerge\WooCommerce\PluginFramework\v5_10_3 as Framework;
 use Omnipay\FirstAtlanticCommerce\FACGateway;
+use Omnipay\FirstAtlanticCommerce\Constants;
 
 defined( 'ABSPATH' ) or exit;
 
@@ -31,9 +32,29 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
         {
             $FACGW->setTestMode(true);
         }
+        else
+        {
+            $FACGW->setTestMode(false);
+        }
 
         $FACGW->setFacId($this->get_gateway()->get_merchant_id());
         $FACGW->setFacPwd($this->get_gateway()->get_merchant_password());
+
+        $FACIntegration = $this->get_gateway()->integration;
+        switch ($FACIntegration)
+        {
+            case Constants::GATEWAY_INTEGRATION_DIRECT:
+                $FACGW->setIntegrationOption(Constants::GATEWAY_INTEGRATION_DIRECT);
+                break;
+            case Constants::GATEWAY_INTEGRATION_HOSTED:
+                $FACGW->setIntegrationOption(Constants::GATEWAY_INTEGRATION_HOSTED);
+                $FACGW->setFacPageSet($this->get_gateway()->get_hosted_page_set());
+                $FACGW->setFacPageName($this->get_gateway()->get_hosted_page_name());
+                break;
+
+            default:
+                throw new Framework\SV_WC_API_Exception( 'Invalid FAC integration option' );
+        }
 
         switch ( $args['type'] ) {
 
@@ -249,9 +270,18 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
         {
             if ($response->getCode() === "00" || $response->getCode() === "0")
             {
-                header("Content-Type: text/html");
-                print html_entity_decode($response->getHTMLFormData());
-                exit;
+                $response->renderHTMLFormData();
+            }
+            else {
+                throw new Framework\SV_WC_API_Exception($response->getMessage(), $response->getCode());
+            }
+        }
+
+        if ($response instanceof Omnipay\FirstAtlanticCommerce\Message\HostedPagePreprocessResponse)
+        {
+            if ($response->isSuccessful())
+            {
+                $response->redirectToHostedPage();
             }
             else {
                 throw new Framework\SV_WC_API_Exception($response->getMessage(), $response->getCode());
@@ -272,6 +302,12 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
     public function handle_3ds_response($response)
     {
         $this->response_handler = 'WC_FirstAtlanticCommerce_API_Three_DS_Transaction_Response';
+        return $this->handle_response($response);
+    }
+
+    public function handle_hostedpage_response($response)
+    {
+        $this->response_handler = 'WC_FirstAtlanticCommerce_API_Hosted_Credit_Card_Transaction_Response';
         return $this->handle_response($response);
     }
 }

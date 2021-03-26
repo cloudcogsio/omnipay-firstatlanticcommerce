@@ -12,6 +12,8 @@ abstract class WC_FirstAtlanticCommerce_API_Response implements Framework\SV_WC_
 
 	protected $response_type;
 
+	protected $check_csc = true;
+
 	/** @var \Omnipay\FirstAtlanticCommerce\Support\CreditCardTransactionResults **/
 	protected $CreditCardTransactionResults;
 
@@ -22,6 +24,10 @@ abstract class WC_FirstAtlanticCommerce_API_Response implements Framework\SV_WC_
 
 		if ($response instanceof Omnipay\FirstAtlanticCommerce\Message\AuthorizeResponse) {
 		    $this->CreditCardTransactionResults = $this->response->getCreditCardTransactionResults();
+		}
+
+		if ($response instanceof Omnipay\FirstAtlanticCommerce\Message\TransactionModificationResponse) {
+		    $this->check_csc = false;
 		}
 	}
 
@@ -83,6 +89,11 @@ abstract class WC_FirstAtlanticCommerce_API_Response implements Framework\SV_WC_
 
 	protected function is_credit_card_response() {
 		return 'credit-card' === $this->get_response_type();
+	}
+
+	public function get_api_response()
+	{
+	    return $this->response;
 	}
 
 	/**

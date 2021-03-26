@@ -34,4 +34,11 @@ class Authorize3DSResponse extends AbstractResponse
     {
         return $this;
     }
+
+    public function renderHTMLFormData()
+    {
+        header("Content-Type: text/html");
+        print html_entity_decode($this->getHTMLFormData());
+        exit;
+    }
 }

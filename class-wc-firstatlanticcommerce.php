@@ -83,17 +83,6 @@ class WC_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_Plugin {
 
         /** @var \WC_Gateway_FirstAtlanticCommerce_Credit_Card $credit_card_gateway */
         $credit_card_gateway = $this->get_gateway( self::CREDIT_CARD_GATEWAY_ID );
-
-        if ( $credit_card_gateway->is_advanced_fraud_tool_enabled() && ! $this->get_admin_notice_handler()->is_notice_dismissed( 'fraud-tool-notice' ) ) {
-
-            $this->get_admin_notice_handler()->add_admin_notice(
-                sprintf( __( 'Heads up! You\'ve enabled advanced fraud tools.', self::TEXT_DOMAIN ),
-                    '<a target="_blank" href="' . $this->get_documentation_url() . '">',
-                    '</a>'
-                    ), 'fraud-tool-notice', array( 'always_show_on_settings' => false, 'dismissible' => true, 'notice_class' => 'updated' )
-                );
-        }
-
         $credit_card_settings = get_option( 'woocommerce_firstatlanticcommerce_credit_card_settings' );
 
         // install notice

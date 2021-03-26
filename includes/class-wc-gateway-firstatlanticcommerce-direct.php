@@ -165,8 +165,51 @@ class WC_Gateway_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_D
 				'type'     => 'password',
 				'class'    => 'environment-field sandbox-field',
 				'desc_tip' => __( 'The processing password for your First Atlantic Commerce STAGING account.', self::TEXT_DOMAIN ),
-			)
+			),
+
+		    'hosted_page_title' => array(
+		        'title'       => __( 'FAC Integration Option', self::TEXT_DOMAIN ),
+		        'type'        => 'title',
+		        'description' => esc_html__( 'Select the type of integration required. (*Hosted Page requires additional setup in your Merchant Account at FAC)', self::TEXT_DOMAIN ),
+		    ),
+
+		    'integration' => array(
+		        'title'    => esc_html__( 'Integration', 'woocommerce-plugin-framework' ),
+		        'type'     => 'select',
+		        'default'  => 'direct',
+		        'options'  => ['direct'=>'Direct API','hosted'=>'Hosted Page'],
+		    ),
+
+		    'page_set' => array(
+		        'title'    => __( 'Hosted Page - Page Set', self::TEXT_DOMAIN ),
+		        'type'     => 'text',
+		        'class'    => 'environment-field production-field integration-field hosted-field',
+		        'desc_tip' => __( 'The "Page Set" for your hosted checkout page', self::TEXT_DOMAIN),
+		    ),
+
+		    'page_name' => array(
+		        'title'    => __( 'Hosted Page - Page Name', self::TEXT_DOMAIN),
+		        'type'     => 'text',
+		        'class'    => 'environment-field production-field integration-field hosted-field',
+		        'desc_tip' => __( 'The "Page Name" for your hosted checkout page', self::TEXT_DOMAIN ),
+		    ),
+
+		    'sandbox_page_set' => array(
+		        'title'    => __( 'ECM Hosted Page - Page Set', self::TEXT_DOMAIN ),
+		        'type'     => 'text',
+		        'class'    => 'environment-field sandbox-field integration-field hosted-field',
+		        'desc_tip' => __( 'The "Page Set" for your hosted checkout page', self::TEXT_DOMAIN),
+		    ),
+
+		    'sandbox_page_name' => array(
+		        'title'    => __( 'ECM Hosted Page - Page Name', self::TEXT_DOMAIN),
+		        'type'     => 'text',
+		        'class'    => 'environment-field sandbox-field integration-field hosted-field',
+		        'desc_tip' => __( 'The "Page Name" for your hosted checkout page', self::TEXT_DOMAIN ),
+		    ),
+
 		);
+
 	}
 
 
@@ -225,6 +268,7 @@ class WC_Gateway_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_D
 	    require_once( $includes_path . '/api/responses/abstract-wc-firstatlanticcommerce-api-response.php' );
 	    require_once( $includes_path . '/api/responses/abstract-wc-firstatlanticcommerce-api-transaction-response.php' );
 	    require_once( $includes_path . '/api/responses/class-wc-firstatlanticcommerce-api-credit-card-transaction-response.php' );
+	    require_once( $includes_path . '/api/responses/class-wc-firstatlanticcommerce-api-hosted-credit-card-transaction-response.php' );
 	    require_once( $includes_path . '/api/responses/class-wc-firstatlanticcommerce-api-3ds-transaction-response.php' );
 
 	    return $this->api = new WC_FirstAtlanticCommerce_OmniPay_API( $this );
@@ -287,6 +331,24 @@ class WC_Gateway_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_D
 		}
 
 		return self::ENVIRONMENT_PRODUCTION === $environment_id ? $this->merchant_password : $this->sandbox_merchant_password;
+	}
+
+	public function get_hosted_page_set( $environment_id = null ) {
+
+		if ( is_null( $environment_id ) ) {
+			$environment_id = $this->get_environment();
+		}
+
+		return self::ENVIRONMENT_PRODUCTION === $environment_id ? $this->page_set : $this->sandbox_page_set;
+	}
+
+	public function get_hosted_page_name( $environment_id = null ) {
+
+		if ( is_null( $environment_id ) ) {
+			$environment_id = $this->get_environment();
+		}
+
+		return self::ENVIRONMENT_PRODUCTION === $environment_id ? $this->page_name : $this->sandbox_page_name;
 	}
 
 

@@ -6,6 +6,9 @@ defined( 'ABSPATH' ) or exit;
 
 class WC_FirstAtlanticCommerce_API_Three_DS_Transaction_Response extends WC_FirstAtlanticCommerce_API_Credit_Card_Transaction_Response {
 
+    public function get_csc_result() {
+        return ! empty($this->response->getCVV2Result()) ? $this->response->getCVV2Result() : null;
+    }
 
 	public function get_authorization_code() {
 

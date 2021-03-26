@@ -4,6 +4,7 @@ use SkyVerge\WooCommerce\PluginFramework\v5_10_3 as Framework;
 use Omnipay\FirstAtlanticCommerce\FACGateway;
 use Omnipay\FirstAtlanticCommerce\Message\AbstractRequest;
 use Omnipay\FirstAtlanticCommerce\Support\CreditCard;
+use Omnipay\FirstAtlanticCommerce\Constants;
 
 defined( 'ABSPATH' ) or exit;
 
@@ -27,23 +28,28 @@ abstract class WC_FirstAtlanticCommerce_API_Request implements Framework\SV_WC_P
 	protected $FACOrderNumber;
 	protected $FACCreditCard;
 	protected $MerchantResponseURL;
+	protected $CardHolderResponseURL;
 
-	public function __construct( $order = null, $FACAPI ) {
+	public function __construct( $order = null, \Omnipay\FirstAtlanticCommerce\FACGateway $FACAPI ) {
 
 		$this->order = $order;
 		$this->FACAPI = $FACAPI;
 		$this->MerchantResponseURL = get_site_url()."/wc-api/".WC_FirstAtlanticCommerce::CREDIT_CARD_GATEWAY_ID;
+		$this->CardHolderResponseURL = $this->MerchantResponseURL;
 
 		$this->FACOrderNumber = $this->order->get_order_key()."|".$this->order->get_order_number();
 
-		$this->FACCreditCard = new CreditCard([
-		    'number'=>$this->get_order()->payment->account_number,
-		    'cvv'=>$this->get_order()->payment->csc,
-		    'expiryMonth'=>$this->get_order()->payment->exp_month,
-		    'expiryYear'=>$this->get_order()->payment->exp_year
-		]);
+		if ($FACAPI->getIntegrationOption() == Constants::GATEWAY_INTEGRATION_DIRECT)
+		{
+    		$this->FACCreditCard = new CreditCard([
+    		    'number'=>$this->get_order()->payment->account_number,
+    		    'cvv'=>$this->get_order()->payment->csc,
+    		    'expiryMonth'=>$this->get_order()->payment->exp_month,
+    		    'expiryYear'=>$this->get_order()->payment->exp_year
+    		]);
 
-		$this->FACCreditCard->setBillingCountry($this->get_order_prop( 'billing_country' ));
+    		$this->FACCreditCard->setBillingCountry($this->get_order_prop( 'billing_country' ));
+		}
 	}
 
 	public function getFACAPI()
