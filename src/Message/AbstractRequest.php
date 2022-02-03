@@ -308,4 +308,12 @@ implements \Omnipay\FirstAtlanticCommerce\Support\FACParametersInterface
     {
         return $this->getParameter(AbstractRequest::PARAM_CACHE_REQUEST);
     }
+
+    public function getCurrencyNumeric()
+    {
+        $currency = parent::getCurrencyNumeric();
+        if (is_string($currency) && strlen($currency) == 2) return "0".$currency;
+
+        return $currency;
+    }
 }
