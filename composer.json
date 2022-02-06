@@ -19,7 +19,7 @@
 			"WC_FirstAtlanticCommerce\\" : "includes"
 		}
 	},
-	"description" : "First Atlantic Commerce (FAC) Payment Gateway Driver for Omnipay",
+	"description" : "First Atlantic Commerce (FAC) payment gateway plugin for Woocommerce.",
 	"minimum-stability" : "dev",
 	"require" : {
 		"php" : "^7.4",
