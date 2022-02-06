@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e45e2e7f11217a0f94e7229e2c284468",
+    "content-hash": "06d69e4d2855397f9b07ad1c40141071",
     "packages": [
         {
             "name": "cloudcogsio/omnipay-firstatlanticcommerce-gateway",
@@ -1699,7 +1699,9 @@
     },
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "php": "^7.4"
+    },
     "platform-dev": [],
     "plugin-api-version": "2.1.0"
 }
