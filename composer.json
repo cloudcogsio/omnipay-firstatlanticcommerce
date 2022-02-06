@@ -15,7 +15,6 @@
 	],
 	"autoload" : {
 		"psr-4" : {
-			"Omnipay\\FirstAtlanticCommerce\\" : "src",
 			"SkyVerge\\WooCommerce\\PluginFramework\\v5_10_3\\" : "vendor/skyverge/wc-plugin-framework/woocommerce",
 			"WC_FirstAtlanticCommerce\\" : "includes"
 		}
@@ -27,7 +26,7 @@
 		"php-http/zend-adapter" : "0.1.0",
 		"guzzlehttp/psr7" : "1.7.0",
 		"php-http/message" : "1.10.0",
-		"league/iso3166" : "3.0.0",
-		"skyverge/wc-plugin-framework" : "5.10.3"
+		"skyverge/wc-plugin-framework" : "5.10.3",
+		"cloudcogsio/omnipay-firstatlanticcommerce-gateway": "dev-master"
 	}
 }

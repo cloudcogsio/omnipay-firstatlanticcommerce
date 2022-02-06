@@ -4,10 +4,9 @@
  */
 
 use SkyVerge\WooCommerce\PluginFramework\v5_10_3 as Framework;
-use OmniPay\FirstAtlanticCommerce\Support\ThreeDSResponse;
+use Omnipay\FirstAtlanticCommerce\Support\ThreeDSResponse;
 use Omnipay\FirstAtlanticCommerce\FACGateway;
 use Omnipay\FirstAtlanticCommerce\Constants;
-use Omnipay\FirstAtlanticCommerce\Support\CreditCard;
 use SkyVerge\WooCommerce\PluginFramework\v5_10_3\SV_WC_Helper;
 
 defined( 'ABSPATH' ) or exit;
@@ -135,8 +134,6 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 	    else
 	    {
     	    try {
-        	    require_once $this->get_plugin()->get_plugin_path() . '/src/Support/ThreeDSResponse.php';
-
         	    $ThreeDSResponse = new ThreeDSResponse($this->get_merchant_password(), $_POST);
 
         	    $response = $this->get_api()->handle_3ds_response($ThreeDSResponse);
