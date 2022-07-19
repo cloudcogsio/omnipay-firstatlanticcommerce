@@ -40,6 +40,51 @@ class WC_Gateway_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_D
 		parent::__construct( $id, $plugin, $args );
 
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts'] );
+
+		add_action( 'add_meta_boxes_shop_order', array( $this, 'add_box' ) );
+	}
+
+	public function add_box()
+	{
+		add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-binlist-box', 'binlist.net Info', array( $this, 'create_box_content_binlist' ), 'shop_order', 'side', 'low' );
+		add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-ipgeolocation-box', 'IP Geolocation Info', array( $this, 'create_box_content_ipgeolocation' ), 'shop_order', 'side', 'low' );
+	}
+
+	public function create_box_content_binlist()
+	{
+		global $post;
+		$order = $this->get_order($post->ID);
+		$binlistData = json_decode($order->get_meta('wc_firstatlanticcommerce_binlist_info'));
+		if ($binlistData != null)
+		{
+			print "<ul>";
+			print "<li><img style='width:30px' src='".get_site_url()."/wp-content/plugins/woocommerce-gateway-first-atlantic-commerce/vendor/skyverge/wc-plugin-framework/woocommerce/payment-gateway/assets/images/card-".$binlistData->scheme.".svg' />&nbsp;<img style='width: 30px' src='https://flags.fmcdn.net/data/flags/normal/".strtolower($binlistData->country->alpha2).".png' /></li>";
+			print "<li><em>".$binlistData->brand."</em></li>";
+			print "<li><em>".$binlistData->bank->name."</em></li>";
+			print "<li><em>".$binlistData->country->name."</em></li>";
+			print "</ul>";
+		}
+		else {
+			print "<em>Not Available</em>";
+		}
+	}
+
+	public function create_box_content_ipgeolocation()
+	{
+		global $post;
+		$order = $this->get_order($post->ID);
+		$geodata = json_decode($order->get_meta('wc_firstatlanticcommerce_ip_geolocation'));
+		if ($geodata != null)
+		{
+			print "<ul>";
+			print "<li><img style='width: 30px' src='https://flags.fmcdn.net/data/flags/normal/".strtolower($geodata->country_code2).".png' /></li>";
+			print "<li><em>".$geodata->city."</em></li>";
+			print "<li><em>".$geodata->country_name."</em></li>";
+			print "</ul>";
+		}
+		else {
+			print "<em>Not Available</em>";
+		}
 	}
 
 	/**

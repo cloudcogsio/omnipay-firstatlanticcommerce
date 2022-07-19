@@ -5,7 +5,7 @@
  * Description: WooCommerce Payment Gateway for First Atlantic Commerce (https://firstatlanticcommerce.com)
  * Author: cloudcogs.io
  * Author URI: https://www.cloudcogs.io/
- * Version: 1.0.1
+ * Version: 1.0.2
  * Text Domain: woocommerce-gateway-first-atlantic-commerce
  * Domain Path: /i18n/languages/
  *

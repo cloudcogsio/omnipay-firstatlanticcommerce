@@ -419,10 +419,7 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
             if (strlen($bin) > 0)
             {
                 $binlistdata = file_get_contents('https://lookup.binlist.net/'.$bin);
-                if (($binlistInfo = json_decode($binlistdata)) != null)
-                {
-                    $order->add_order_note("Type: ".$binlistInfo->scheme." Country: ".$binlistInfo->country->name." Bank: ".$binlistInfo->bank->name);
-                }
+	            $order->add_meta_data('wc_firstatlanticcommerce_binlist_info', utf8_encode($binlistdata), true);
             }
 
             if ($this->ipgeolocation_api != null)
@@ -430,15 +427,7 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
                 $ip = get_post_meta( $order->get_id(), '_customer_ip_address', true );
 
                 $geodata = file_get_contents('https://api.ipgeolocation.io/ipgeo?apiKey='.$this->ipgeolocation_api.'&ip='.$ip);
-                if (($geoInfo = json_decode($geodata)) != null)
-                {
-                    if($geoInfo->message != null)
-                    {
-                        $order->add_order_note("IP: " . $ip . " Message: " . $geoInfo->message);
-                    } else {
-                        $order->add_order_note("IP: " . $ip . " Country: " . $geoInfo->country_name);
-                    }
-                }
+	            $order->add_meta_data('wc_firstatlanticcommerce_ip_geolocation', utf8_encode($geodata), true);
             }
 
 		    if ( $response->transaction_approved() ) {
