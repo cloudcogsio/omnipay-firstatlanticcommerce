@@ -44,7 +44,7 @@ class WC_FirstAtlanticCommerce_API_Credit_Card_Transaction_Response extends WC_F
 
 	public function get_bin() {
 
-	    return ! empty( $this->CreditCardTransactionResults->getRequest()->getCard()->getBin(4) ) ? $this->CreditCardTransactionResults->getRequest()->getCard()->getBin(4): null;
+	    return ! empty( $this->CreditCardTransactionResults->getRequest()->getCard()->getBin(6) ) ? $this->CreditCardTransactionResults->getRequest()->getCard()->getBin(6): null;
 	}
 
 

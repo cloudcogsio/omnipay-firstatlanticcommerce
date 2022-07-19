@@ -30,12 +30,17 @@ abstract class WC_FirstAtlanticCommerce_API_Request implements Framework\SV_WC_P
 	protected $MerchantResponseURL;
 	protected $CardHolderResponseURL;
 
-	public function __construct( $order = null, \Omnipay\FirstAtlanticCommerce\FACGateway $FACAPI ) {
+    /** @var \Omnipay\FirstAtlanticCommerce\Support\TransactionCode */
+    protected $TransactionCodes;
+
+	public function __construct( $order = null, \Omnipay\FirstAtlanticCommerce\FACGateway $FACAPI, array $DefaultTransactionCodes) {
 
 		$this->order = $order;
 		$this->FACAPI = $FACAPI;
 		$this->MerchantResponseURL = get_site_url()."/wc-api/".WC_FirstAtlanticCommerce::CREDIT_CARD_GATEWAY_ID;
 		$this->CardHolderResponseURL = $this->MerchantResponseURL;
+        $this->TransactionCodes = new \Omnipay\FirstAtlanticCommerce\Support\TransactionCode($DefaultTransactionCodes);
+
 
 		$this->FACOrderNumber = $this->order->get_order_key()."|".$this->order->get_order_number();
 

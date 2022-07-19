@@ -47,7 +47,7 @@ class WC_FirstAtlanticCommerce_API_Three_DS_Transaction_Response extends WC_Firs
 
 	public function get_bin() {
 
-	    return ! empty( $this->response->getTokenizedPAN() ) ? substr($this->response->getTokenizedPAN(), 0, 4): null;
+	    return ! empty( $this->response->getTokenizedPAN() ) ? substr($this->response->getTokenizedPAN(), 0, 6): null;
 	}
 
 

@@ -28,17 +28,12 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
         $this->order = isset( $args['order'] ) && $args['order'] instanceof WC_Order ? $args['order'] : null;
 
         $FACGW = new FACGateway();
-        if($this->get_gateway()->get_environment() == WC_Gateway_FirstAtlanticCommerce::ENVIRONMENT_SANDBOX)
-        {
-            $FACGW->setTestMode(true);
-        }
-        else
-        {
-            $FACGW->setTestMode(false);
-        }
+        ($this->get_gateway()->get_environment() == WC_Gateway_FirstAtlanticCommerce::ENVIRONMENT_SANDBOX) ? $FACGW->setTestMode(true) : $FACGW->setTestMode(false);
+        ($this->get_gateway()->threed_secure == "no") ? $FACGW->set3DS(false) : $FACGW->set3DS(true);
 
         $FACGW->setFacId($this->get_gateway()->get_merchant_id());
         $FACGW->setFacPwd($this->get_gateway()->get_merchant_password());
+        $DefaultTransactionCodes = array_merge([\Omnipay\FirstAtlanticCommerce\Support\TransactionCode::NONE], is_array($this->get_gateway()->transaction_code_types) ? $this->get_gateway()->transaction_code_types : []);
 
         $FACIntegration = $this->get_gateway()->integration;
         switch ($FACIntegration)
@@ -61,7 +56,7 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
             case 'transaction':
 
                 $this->set_response_handler( $this->get_gateway()->is_credit_card_gateway() ? 'WC_FirstAtlanticCommerce_API_Credit_Card_Transaction_Response' : '' );
-                return new WC_FirstAtlanticCommerce_API_Transaction_Request( $this->order, $FACGW );
+                return new WC_FirstAtlanticCommerce_API_Transaction_Request( $this->order, $FACGW, $DefaultTransactionCodes );
 
             default:
                 throw new Framework\SV_WC_API_Exception( 'Invalid request type' );
@@ -270,7 +265,7 @@ class WC_FirstAtlanticCommerce_OmniPay_API extends Framework\SV_WC_API_Base impl
         {
             if ($response->getCode() === "00" || $response->getCode() === "0")
             {
-                $response->renderHTMLFormData();
+                $response->redirect();
             }
             else {
                 throw new Framework\SV_WC_API_Exception($response->getMessage(), $response->getCode());

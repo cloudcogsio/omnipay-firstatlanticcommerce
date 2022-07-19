@@ -19,8 +19,7 @@ class WC_FirstAtlanticCommerce_API_Hosted_Credit_Card_Transaction_Response exten
 	}
 
 	public function get_bin() {
-
-	    return null;
+        return ! empty( $this->CreditCardTransactionResults->getTokenizedPAN() ) ? substr($this->CreditCardTransactionResults->getTokenizedPAN(), 0, 6) : null;
 	}
 
 

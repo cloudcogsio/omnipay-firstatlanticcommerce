@@ -20,10 +20,13 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 	 * Creates a credit card charge request
 	 */
 	public function create_credit_card_charge() {
+        $this->TransactionCodes = $this->TransactionCodes->addCode(TransactionCode::SINGLE_PASS);
+
 	    $FACData = [
 	        'amount' => $this->get_order()->payment_total,
 	        'currency' => $this->get_order_prop('currency'),
 	        'transactionId' => $this->getFACOrderNumber(),
+            'transactionCode' => $this->TransactionCodes,
 	    ];
 
 	    switch ($this->FACAPI->getIntegrationOption())
@@ -31,16 +34,14 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 	        case Constants::GATEWAY_INTEGRATION_DIRECT:
 	            $FACData['card'] = $this->getFACCreditCard();
 	            $FACData['merchantResponseURL'] = $this->MerchantResponseURL;
-	            $FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
 
 	            break;
 
 	        case Constants::GATEWAY_INTEGRATION_HOSTED:
-	            $TransactionCode = new TransactionCode([TransactionCode::HOSTED_PAGE_AUTH_3DS]);
+                if($this->FACAPI->get3DS() === true) $this->TransactionCodes->addCode(TransactionCode::HOSTED_PAGE_AUTH_3DS);
 
                 $FACData['cardHolderResponseURL'] = $this->CardHolderResponseURL;
                 $FACData[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] = true;
-                $FACData['transactionCode'] = $TransactionCode;
                 $FACData['hostedPagePageSet'] = $this->FACAPI->getFacPageSet();
                 $FACData['hostedPageName'] = $this->FACAPI->getFacPageName();
 	            break;
@@ -59,6 +60,7 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 		    'amount' => $this->get_order()->payment_total,
 		    'currency' => $this->get_order_prop('currency'),
 		    'transactionId' => $this->getFACOrderNumber(),
+            'transactionCode' => $this->TransactionCodes,
 		];
 
 		switch ($this->FACAPI->getIntegrationOption())
@@ -66,16 +68,14 @@ class WC_FirstAtlanticCommerce_API_Transaction_Request extends WC_FirstAtlanticC
 		    case Constants::GATEWAY_INTEGRATION_DIRECT:
 		        $FACData['card'] = $this->getFACCreditCard();
 		        $FACData['merchantResponseURL'] = $this->MerchantResponseURL;
-		        $FACData[Constants::AUTHORIZE_OPTION_3DS] = true;
 
 		        break;
 
 		    case Constants::GATEWAY_INTEGRATION_HOSTED:
-		        $TransactionCode = new TransactionCode([TransactionCode::HOSTED_PAGE_AUTH_3DS]);
+                if($this->FACAPI->get3DS() === true) $this->TransactionCodes->addCode(TransactionCode::HOSTED_PAGE_AUTH_3DS);
 
 		        $FACData['cardHolderResponseURL'] = $this->CardHolderResponseURL;
 		        $FACData[Constants::AUTHORIZE_OPTION_HOSTED_PAGE] = true;
-		        $FACData['transactionCode'] = $TransactionCode;
 		        $FACData['hostedPagePageSet'] = $this->FACAPI->getFacPageSet();
 		        $FACData['hostedPageName'] = $this->FACAPI->getFacPageName();
 		        break;

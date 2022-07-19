@@ -234,6 +234,8 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 		);
 
 		$fields = array_merge( $fields, $this->get_3d_secure_fields() );
+		$fields = array_merge( $fields, $this->get_fac_transaction_code_field() );
+        $fields = array_merge($fields, $this->get_ipgeolocation_field());
 
 		return array_merge( parent::get_method_form_fields(), $fields );
 	}
@@ -257,21 +259,58 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 			'threed_secure_title' => array(
 				'title'       => __( '3D Secure', self::TEXT_DOMAIN ),
 				'type'        => 'title',
-				'description' => __( '3D Secure benefits cardholders and merchants by providing an additional layer of verification using Verified by Visa and MasterCard SecureCode and is enabled by default. ', self::TEXT_DOMAIN ),
+				'description' => __( '3D Secure benefits cardholders and merchants by providing an additional layer of verification using Verified by Visa and MasterCard SecureCode. ', self::TEXT_DOMAIN ),
 			),
-			/*'threed_secure_card_types' => array(
-				'title'       => __( 'Supported Card Types', self::TEXT_DOMAIN ),
-				'type'        => 'multiselect',
-				'class'       => 'wc-enhanced-select',
-				'description' => __( '3D Secure validation will occur for these cards.', self::TEXT_DOMAIN ),
-				'default'     => array_keys( $default_card_types ),
-				'options'     => $card_types,
-			    'custom_attributes' => array('disabled' => 'disabled')
-			),*/
+            'threed_secure' => array(
+                'title'    => __( 'Use 3D Secure', self::TEXT_DOMAIN ),
+                'type'     => 'select',
+                'default'  => 'yes',
+                'options'  => ['yes'=>'Yes','no'=>'No'],
+            ),
 		);
 
 		return $fields;
 	}
+
+    protected function get_fac_transaction_code_field()
+    {
+        $fields = array(
+            'transaction_code_title' => array(
+                'title'       => __( 'FAC Transaction Codes (optional)', self::TEXT_DOMAIN ),
+                'type'        => 'title',
+                'description' => __( 'Specify optional FAC transaction codes for each transaction. May require additional setup for your Merchant account at FAC.', self::TEXT_DOMAIN ),
+            ),
+            'transaction_code_types' => array(
+				'title'       => __( 'Transaction Codes', self::TEXT_DOMAIN ),
+				'type'        => 'multiselect',
+				'class'       => 'wc-enhanced-select',
+				'description' => __( 'These codes will be included for each transaction', self::TEXT_DOMAIN ),
+				'default'     => [],
+				'options'     => ['1'=>'Include AVS Check', '128'=>'Tokenize PAN'],
+			),
+        );
+
+        return $fields;
+    }
+
+    protected function get_ipgeolocation_field()
+    {
+        $fields = array(
+            'ipgeolocation_title' => array(
+                'title'       => __( 'IP Geolocation', self::TEXT_DOMAIN ),
+                'type'        => 'title',
+                'description' => __( 'Performs IP geolocation lookup of customer IP for each order.', self::TEXT_DOMAIN ),
+            ),
+            'ipgeolocation_api' => array(
+                'title'       => __( 'API Key', self::TEXT_DOMAIN ),
+                'type'        => 'text',
+                'description' => __( 'Signup at https://ipgeolocation.io', self::TEXT_DOMAIN ),
+                'desc_tip'     => "Your IP Geolocation API Key",
+            ),
+        );
+
+        return $fields;
+    }
 
 	protected function add_csc_form_fields( $form_fields ) {
 
@@ -376,10 +415,36 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
 		        $response = $this->handled_response;
 		    }
 
+            $bin = $response->get_bin();
+            if (strlen($bin) > 0)
+            {
+                $binlistdata = file_get_contents('https://lookup.binlist.net/'.$bin);
+                if (($binlistInfo = json_decode($binlistdata)) != null)
+                {
+                    $order->add_order_note("Type: ".$binlistInfo->scheme." Country: ".$binlistInfo->country->name." Bank: ".$binlistInfo->bank->name);
+                }
+            }
+
+            if ($this->ipgeolocation_api != null)
+            {
+                $ip = get_post_meta( $order->get_id(), '_customer_ip_address', true );
+
+                $geodata = file_get_contents('https://api.ipgeolocation.io/ipgeo?apiKey='.$this->ipgeolocation_api.'&ip='.$ip);
+                if (($geoInfo = json_decode($geodata)) != null)
+                {
+                    if($geoInfo->message != null)
+                    {
+                        $order->add_order_note("IP: " . $ip . " Message: " . $geoInfo->message);
+                    } else {
+                        $order->add_order_note("IP: " . $ip . " Country: " . $geoInfo->country_name);
+                    }
+                }
+            }
+
 		    if ( $response->transaction_approved() ) {
 		        $order->payment->account_number = $response->get_masked_number();
 		        $order->payment->last_four      = $response->get_last_four();
-		        $order->payment->card_type      = Framework\SV_WC_Payment_Gateway_Helper::card_type_from_account_number( $response->get_masked_number() );
+		        $order->payment->card_type      = Framework\SV_WC_Payment_Gateway_Helper::card_type_from_account_number( $response->get_bin() );
 		        $order->payment->exp_month      = $response->get_exp_month();
 		        $order->payment->exp_year       = $response->get_exp_year();
 		    }
