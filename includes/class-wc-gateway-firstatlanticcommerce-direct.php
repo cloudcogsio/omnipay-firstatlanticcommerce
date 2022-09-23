@@ -46,8 +46,19 @@ class WC_Gateway_FirstAtlanticCommerce extends Framework\SV_WC_Payment_Gateway_D
 
 	public function add_box()
 	{
-		add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-binlist-box', 'binlist.net Info', array( $this, 'create_box_content_binlist' ), 'shop_order', 'side', 'low' );
-		add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-ipgeolocation-box', 'IP Geolocation Info', array( $this, 'create_box_content_ipgeolocation' ), 'shop_order', 'side', 'low' );
+		global $post;
+		$order = $this->get_order($post->ID);
+
+		if ($order->get_payment_method() == $this->id) {
+			add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-binlist-box', 'binlist.net Info', array(
+				$this,
+				'create_box_content_binlist'
+			), 'shop_order', 'side', 'low' );
+			add_meta_box( 'woocommerce-gateway-first-atlantic-commerce-ipgeolocation-box', 'IP Geolocation Info', array(
+				$this,
+				'create_box_content_ipgeolocation'
+			), 'shop_order', 'side', 'low' );
+		}
 	}
 
 	public function create_box_content_binlist()

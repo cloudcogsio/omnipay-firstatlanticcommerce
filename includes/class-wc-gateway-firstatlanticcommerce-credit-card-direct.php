@@ -109,9 +109,7 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
                     $WC_OrderID = $FACOrderConfirm[1];
                     $WC_OrderKey = $FACOrderConfirm[0];
 
-                    $order = $this->get_order($WC_OrderID);
-
-                    $this->do_transaction($order);
+                    $this->process_payment($WC_OrderID);
 
                     print("<script>window.opener.document.location.href = '".get_site_url()."/checkout/order-received/".$WC_OrderID."/?key=".$WC_OrderKey."';</script>");
                     print("<script>window.close();</script>");
@@ -144,9 +142,7 @@ class WC_Gateway_FirstAtlanticCommerce_Credit_Card_Direct extends WC_Gateway_Fir
         	    $WC_OrderID = $FACOrderConfirm[1];
         	    $WC_OrderKey = $FACOrderConfirm[0];
 
-        	    $order = $this->get_order($WC_OrderID);
-
-        	    $this->do_transaction($order);
+        	    $this->process_payment($WC_OrderID);
 
         	    wp_safe_redirect( get_site_url()."/checkout/order-received/".$WC_OrderID."/?key=".$WC_OrderKey);
         	    exit;

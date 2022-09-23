@@ -35,7 +35,18 @@ abstract class WC_FirstAtlanticCommerce_Payment_Form extends Framework\SV_WC_Pay
 
 			$id = 'wc-' . $this->get_gateway()->get_id_dasherized() . '-test-amount';
 
+			$fieldsetId = 'wc-' . $this->get_gateway()->get_id_dasherized() . '-credit-card-form';
 			?>
+            <style>
+                #<?php echo $fieldsetId; ?> {
+                    border:1px solid #000000;
+                    padding-block-end: unset;
+                }
+                .payment_method_<?= $this->get_gateway()->get_id(); ?> {
+                    padding-left: 0px !important;
+                }
+            </style>
+
 			<p class="form-row">
 				<label for="<?php echo esc_attr( $id ); ?>">Test Amount <span style="font-size: 10px;" class="description">- Enter a test amount or leave blank to use the order total.</span></label>
 				<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $id ); ?>" />
