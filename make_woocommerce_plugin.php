@@ -3,7 +3,7 @@ $plugin_name = "woocommerce-gateway-first-atlantic-commerce";
 $target = "../".$plugin_name;
 
 $zip = new ZipArchive();
-if ($zip->open($plugin_name.".zip", ZipArchive::CREATE | ZipArchive::OVERWRITE)!==TRUE) {
+if ($zip->open(($argv[1] ?? "").$plugin_name.".zip", ZipArchive::CREATE | ZipArchive::OVERWRITE)!==TRUE) {
     exit("cannot open <$plugin_name.zip>\n");
 }
 
